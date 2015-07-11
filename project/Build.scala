@@ -10,8 +10,38 @@ object Build extends Build {
     .settings(
       description := "learn-spark",
       version := "0.0.1",
+      homepage := Some(new URL("https://github.com/yangbajing/learn-spark")),
+      organization := "cn.fenjoy",
+      organizationHomepage := Some(new URL("http://www.yangbajing.me")),
+      startYear := Some(2015),
       scalaVersion := "2.11.7",
-      libraryDependencies ++= (
+      scalacOptions := Seq(
+        "-encoding", "utf8",
+        //"-Ylog-classpath",
+        "-feature",
+        "-unchecked",
+        "-deprecation",
+        "-explaintypes",
+        "-Yno-adapted-args",
+        "-Ywarn-dead-code",
+        "-Ywarn-unused"
+      ),
+      javacOptions := Seq(
+        "-encoding", "utf8",
+        "-deprecation",
+        "-Xlint:unchecked",
+        "-Xlint:deprecation"
+      ),
+      resolvers ++= Seq(
+        "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/",
+        "releases" at "http://oss.sonatype.org/content/repositories/releases",
+        "maven.mirrorid" at "http://mirrors.ibiblio.org/pub/mirrors/maven2/",
+        "snapshots" at "http://oss.sonatype.org/content/repositories/snapshots",
+        "Typesafe Snapshots" at "http://repo.typesafe.com/typesafe/snapshots/"),
+      sources in(Compile, doc) := Seq.empty,
+      publishArtifact in(Compile, packageDoc) := false,
+      offline := true,
+      libraryDependencies ++= Seq(
         "org.apache.spark" %% "spark-core" % "1.4.0" % "provided"
       )
     )
