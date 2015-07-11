@@ -42,7 +42,15 @@ object Build extends Build {
       publishArtifact in(Compile, packageDoc) := false,
       offline := true,
       libraryDependencies ++= Seq(
-        "org.apache.spark" %% "spark-core" % "1.4.0" % "provided"
+        "org.scala-lang" % "scala-library" % "2.11.7",
+        "org.scala-lang" % "scala-compiler" % "2.11.7",
+        "org.scala-lang" % "scala-reflect" % "2.11.7",
+        "org.scala-lang" % "scalap" % "2.11.7",
+        ("org.apache.spark" %% "spark-core" % "1.4.0" % "provided").
+          exclude("org.scala-lang", "scala-library").
+          exclude("org.scala-lang", "scala-compiler").
+          exclude("org.scala-lang", "scala-compiler").
+          exclude("org.scala-lang", "scalap")
       )
     )
 }
