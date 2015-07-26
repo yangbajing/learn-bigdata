@@ -42,16 +42,8 @@ object Build extends Build {
       publishArtifact in(Compile, packageDoc) := false,
       offline := true,
       libraryDependencies ++= Seq(
-        ("org.apache.spark" %% "spark-core" % verSpark).
-          exclude("org.scala-lang", "scala-library").
-          exclude("org.scala-lang", "scala-compiler").
-          exclude("org.scala-lang", "scala-compiler").
-          exclude("org.scala-lang", "scalap"),
-        ("org.apache.spark" %% "spark-sql" % verSpark).
-          exclude("org.scala-lang", "scala-library").
-          exclude("org.scala-lang", "scala-compiler").
-          exclude("org.scala-lang", "scala-compiler").
-          exclude("org.scala-lang", "scalap"),
+        "org.apache.spark" %% "spark-core" % verSpark,
+//        ("org.apache.spark" %% "spark-sql" % verSpark % "provided"),
         "org.apache.hadoop" % "hadoop-client" % verHadoop,
         "org.postgresql" % "postgresql" % "9.4-1201-jdbc41"
       )

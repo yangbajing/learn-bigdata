@@ -1,4 +1,4 @@
-package me.yangbajing.learnspark
+package learnspark.intro
 
 import org.apache.spark.{SparkConf, SparkContext}
 
@@ -8,12 +8,15 @@ import org.apache.spark.{SparkConf, SparkContext}
  */
 object FirstApp {
   def main(args: Array[String]): Unit = {
-    val conf = new SparkConf().setAppName("wordCount").setMaster("spark://192.168.31.101:7077")
+    val inputFile = System.getenv("SPARK_HOME") + "/README.md"
+    val outputFile = "/tmp/learnspark/firstApp"
+
+    val conf = new SparkConf().setAppName("wordCount").setMaster("spark://192.168.1.104:7077")
     val sc = new SparkContext(conf)
 
-    val input = sc.textFile(System.getenv("SPARK_HOME") + "/README.md")
+    val input = sc.textFile(inputFile)
     val words = input.flatMap(_.split(' '))
     val counts = words.map((_, 1)).reduceByKey { case (x, y) => x + y }
-    counts.foreach(println)
+    counts.saveAsTextFile(outputFile)
   }
 }
