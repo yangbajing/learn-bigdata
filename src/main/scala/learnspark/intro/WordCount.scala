@@ -12,7 +12,7 @@ object WordCount {
 
     val inputFile = args(0)
     val outputFile = args(1)
-    execute(inputFile, outputFile)
+    execute(inputFile, outputFile, "spark://192.168.31.101:7077")
   }
 
   def execute(inputFile: String, outputFile: String, master: String = "local[*]") {
@@ -20,7 +20,7 @@ object WordCount {
     val sc = new SparkContext(conf)
 
     val input = sc.textFile(inputFile)
-    val words = input.flatMap(_.split(' '))
+    val words = input.flatMap(_.split(" "))
     val counts = words.map((_, 1)).reduceByKey { case (x, y) => x + y }
     counts.saveAsTextFile(outputFile)
   }

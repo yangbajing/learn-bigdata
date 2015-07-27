@@ -7,11 +7,12 @@ object Build extends Build {
   }
 
   lazy val learnSpark = Project("learn-spark", file("."))
+    .settings(net.virtualvoid.sbt.graph.Plugin.graphSettings)
     .settings(
       description := "learn-spark",
       version := "0.0.1",
       homepage := Some(new URL("https://github.com/yangbajing/learn-spark")),
-      organization := "cn.fenjoy",
+      organization := "me.yangbajing.learn-spark",
       organizationHomepage := Some(new URL("http://www.yangbajing.me")),
       startYear := Some(2015),
       scalaVersion := "2.11.7",
@@ -21,10 +22,9 @@ object Build extends Build {
         "-feature",
         "-unchecked",
         "-deprecation",
-        "-explaintypes",
         "-Yno-adapted-args",
         "-Ywarn-dead-code",
-        "-Ywarn-unused"
+        "-explaintypes"
       ),
       javacOptions := Seq(
         "-encoding", "utf8",
@@ -42,7 +42,10 @@ object Build extends Build {
       publishArtifact in(Compile, packageDoc) := false,
       offline := true,
       libraryDependencies ++= Seq(
-        "org.apache.spark" %% "spark-core" % verSpark % scopeProvidedTest,
+        ("org.apache.spark" %% "spark-core" % verSpark).
+          exclude("org.scala-lang", "scala-library").
+          exclude("org.scala-lang", "scala-compiler").
+          exclude("org.scala-lang", "scala-reflect"), // % scopeProvidedTest,
         //        "org.apache.spark" %% "spark-sql" % verSpark % scopeProvidedTest,
         //        "org.apache.hadoop" % "hadoop-client" % verHadoop,
         //        "org.postgresql" % "postgresql" % "9.4-1201-jdbc41",
@@ -54,4 +57,3 @@ object Build extends Build {
   val verSpark = "1.4.1"
   val verHadoop = "2.6.0"
 }
-

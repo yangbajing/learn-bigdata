@@ -12,7 +12,7 @@ class WordCountTest extends UnitWordSpec {
 
       Files.deleteIfExists(Paths.get(outputFile))
 
-      WordCount.execute(inputFile, outputFile, "spark://192.168.1.104:7077")
+      WordCount.execute(inputFile, outputFile, "spark://192.168.31.101:7077")
     }
   }
 }
