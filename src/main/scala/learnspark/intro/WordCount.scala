@@ -12,7 +12,11 @@ object WordCount {
 
     val inputFile = args(0)
     val outputFile = args(1)
-    val conf = new SparkConf().setAppName("wordCount")
+    execute(inputFile, outputFile)
+  }
+
+  def execute(inputFile: String, outputFile: String, master: String = "local[*]") {
+    val conf = new SparkConf().setAppName("WordCount").setMaster(master)
     val sc = new SparkContext(conf)
 
     val input = sc.textFile(inputFile)

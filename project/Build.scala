@@ -42,13 +42,15 @@ object Build extends Build {
       publishArtifact in(Compile, packageDoc) := false,
       offline := true,
       libraryDependencies ++= Seq(
-        "org.apache.spark" %% "spark-core" % verSpark,
-//        ("org.apache.spark" %% "spark-sql" % verSpark % "provided"),
-        "org.apache.hadoop" % "hadoop-client" % verHadoop,
-        "org.postgresql" % "postgresql" % "9.4-1201-jdbc41"
+        "org.apache.spark" %% "spark-core" % verSpark % scopeProvidedTest,
+        //        "org.apache.spark" %% "spark-sql" % verSpark % scopeProvidedTest,
+        //        "org.apache.hadoop" % "hadoop-client" % verHadoop,
+        //        "org.postgresql" % "postgresql" % "9.4-1201-jdbc41",
+        "org.scalatest" %% "scalatest" % "2.2.5" % "test"
       )
     )
 
+  val scopeProvidedTest = "provided,test"
   val verSpark = "1.4.1"
   val verHadoop = "2.6.0"
 }

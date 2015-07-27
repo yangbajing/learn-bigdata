@@ -7,6 +7,8 @@ import org.apache.spark.{SparkConf, SparkContext}
  * Created by yangjing on 15-7-23.
  */
 object FirstApp {
+
+
   def main(args: Array[String]): Unit = {
     val inputFile = System.getenv("SPARK_HOME") + "/README.md"
     val outputFile = "/tmp/learnspark/firstApp"
