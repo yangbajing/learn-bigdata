@@ -12,7 +12,7 @@ object WordCount {
 
     val inputFile = args(0)
     val outputFile = args(1)
-    execute(inputFile, outputFile, "spark://192.168.31.101:7077")
+    execute(inputFile, outputFile)
   }
 
   def execute(inputFile: String, outputFile: String, master: String = "local[*]") {
