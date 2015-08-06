@@ -43,3 +43,7 @@ docs/_sphinx/exts/__pycache__/
 # node
 static/build/
 static/node_modules/
+
+
+
+data/
