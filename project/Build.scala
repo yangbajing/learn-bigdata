@@ -42,18 +42,13 @@ object Build extends Build {
       publishArtifact in(Compile, packageDoc) := false,
       offline := true,
       libraryDependencies ++= Seq(
-<<<<<<< HEAD
         "org.apache.spark" %% "spark-core" % verSpark % scopeProvidedTest,
+        "org.apache.spark" %% "spark-sql" % verSpark % scopeProvidedTest,
         "org.apache.spark" %% "spark-streaming" % verSpark % scopeProvidedTest,
-=======
-        ("org.apache.spark" %% "spark-core" % verSpark % scopeProvidedTest). //
-          exclude("org.scala-lang", "scala-library").
-          exclude("org.scala-lang", "scala-compiler").
-          exclude("org.scala-lang", "scala-reflect"), // % scopeProvidedTest,
->>>>>>> 766189e31c3518fade07cc9d169b599afb8922a9
-        //        "org.apache.spark" %% "spark-sql" % verSpark % scopeProvidedTest,
-        //        "org.apache.hadoop" % "hadoop-client" % verHadoop,
-        //        "org.postgresql" % "postgresql" % "9.4-1201-jdbc41",
+        "org.apache.spark" %% "spark-streaming-kafka" % verSpark % scopeProvidedTest,
+        "org.apache.hadoop" % "hadoop-client" % verHadoop excludeAll ExclusionRule(organization = "javax.servlet"),
+        "org.mongodb.mongo-hadoop" % "mongo-hadoop-core" % "1.4.0" excludeAll ExclusionRule(organization = "javax.servlet"),
+        "org.postgresql" % "postgresql" % "9.4-1201-jdbc41",
         "org.scalatest" %% "scalatest" % "2.2.5" % "test"
       )
     )
