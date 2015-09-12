@@ -17,7 +17,7 @@ class SampleTest extends WordSpec {
   "SampleTest" should {
     "main" in {
       val mongoConfig = new Configuration()
-      mongoConfig.set("mongo.input.uri", "mongodb://localhost:27017/sc_activity.activityRegistration")
+      mongoConfig.set("mongo.input.uri", "mongodb://192.168.31.121:27017/qq_db.qqInfo")
 
       val documents = sc.newAPIHadoopRDD(
         mongoConfig,
@@ -25,22 +25,19 @@ class SampleTest extends WordSpec {
         classOf[Object],
         classOf[BSONObject])
 
-      val outputConfig = new Configuration()
-      outputConfig.set("mongo.output.uri", "mongodb://localhost:27017/sc_activity.output")
+//      val outputConfig = new Configuration()
+//      outputConfig.set("mongo.output.uri", "mongodb://localhost:27017/sc_activity.output")
 
       val result = documents.map { case (oid, doc) =>
-        val o = new BasicDBObject()
-        o.put("name", Sample.str(doc.get("name")))
-        o.put("job", Sample.str(doc.get("job")))
-        oid -> o
-      }
+        doc
+      }.take(5)
 
-      result.saveAsNewAPIHadoopFile(
-        "file://this-is-completely-unused",
-        classOf[Object],
-        classOf[BSONObject],
-        classOf[MongoOutputFormat[Object, BSONObject]],
-        outputConfig)
+//      result.saveAsNewAPIHadoopFile(
+//        "file://this-is-completely-unused",
+//        classOf[Object],
+//        classOf[BSONObject],
+//        classOf[MongoOutputFormat[Object, BSONObject]],
+//        outputConfig)
 
       result.foreach(println)
     }
