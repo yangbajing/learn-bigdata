@@ -1,14 +1,15 @@
 val scopeProvidedTest = "provided,test"
 val verSpark = "2.4.5"
 val verHadoop = "2.7.7"
+val verFlink = "1.10.1"
 
 ThisBuild / scalaVersion := "2.12.11"
 
 ThisBuild / scalafmtOnCompile := true
 
-lazy val learnBigdata = Project("learn-bigdata", file(".")).aggregate(learnSpark).settings(basicSettings: _*)
+lazy val learnBigdata = Project("learn-bigdata", file(".")).aggregate(learnSpark, learnFlink)
 
-lazy val learnSpark = Project("learn-spark", file("learn-spark")).settings(
+lazy val learnSpark = _project("learn-spark").settings(
   libraryDependencies ++= Seq(
       "org.apache.spark" %% "spark-core" % verSpark % scopeProvidedTest,
       "org.apache.spark" %% "spark-sql" % verSpark % scopeProvidedTest,
@@ -21,6 +22,15 @@ lazy val learnSpark = Project("learn-spark", file("learn-spark")).settings(
         .excludeAll(ExclusionRule(organization = "javax.servlet"))
         .exclude("commons-beanutils", "commons-beanutils-core"),
       "org.postgresql" % "postgresql" % "42.2.10"))
+
+lazy val learnFlink = _project("learn-flink").settings(
+  libraryDependencies ++= Seq(
+      "org.apache.flink" %% "flink-walkthrough-common" % verFlink,
+      "org.apache.flink" %% "flink-streaming-scala" % verFlink,
+      "org.slf4j" % "slf4j-log4j12" % "1.7.7" % Runtime,
+      "log4j" % "log4j" % "1.2.17" % Runtime))
+
+def _project(name: String) = Project(name, file(name)).settings(basicSettings: _*)
 
 def basicSettings =
   Seq(
@@ -48,4 +58,3 @@ def basicSettings =
       case x                                                       => (assemblyMergeStrategy in assembly).value.apply(x)
     },
     libraryDependencies ++= Seq("org.scalatest" %% "scalatest" % "3.1.1" % "test"))
-
