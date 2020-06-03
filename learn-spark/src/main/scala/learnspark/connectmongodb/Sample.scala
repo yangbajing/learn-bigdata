@@ -2,13 +2,13 @@ package learnspark.connectmongodb
 
 import java.text.SimpleDateFormat
 import java.time.format.DateTimeFormatter
-import java.time.{Instant, LocalDateTime, ZoneId}
+import java.time.{ Instant, LocalDateTime, ZoneId }
 import java.util.Date
 
 import com.mongodb.BasicDBObject
-import com.mongodb.hadoop.{MongoInputFormat, MongoOutputFormat}
+import com.mongodb.hadoop.{ MongoInputFormat, MongoOutputFormat }
 import org.apache.hadoop.conf.Configuration
-import org.apache.spark.{SparkContext, SparkConf}
+import org.apache.spark.{ SparkContext, SparkConf }
 import org.bson.BSONObject
 
 /**
@@ -23,20 +23,17 @@ object Sample {
     val mongoConfig = new Configuration()
     mongoConfig.set("mongo.input.uri", "mongodb://localhost:27017/sc_activity.activityRegistration")
 
-    val documents = sc.newAPIHadoopRDD(
-      mongoConfig,
-      classOf[MongoInputFormat],
-      classOf[Object],
-      classOf[BSONObject])
+    val documents = sc.newAPIHadoopRDD(mongoConfig, classOf[MongoInputFormat], classOf[Object], classOf[BSONObject])
 
     val outputConfig = new Configuration()
     outputConfig.set("mongo.output.uri", "mongodb://localhost:27017/sc_activity.output")
 
-    val result = documents.map { case (oid, doc) =>
-      val o = new BasicDBObject()
-      o.put("name", Sample.str(doc.get("name")))
-      o.put("job", Sample.str(doc.get("job")))
-      oid -> o
+    val result = documents.map {
+      case (oid, doc) =>
+        val o = new BasicDBObject()
+        o.put("name", Sample.str(doc.get("name")))
+        o.put("job", Sample.str(doc.get("job")))
+        oid -> o
     }
 
     result.saveAsNewAPIHadoopFile(
@@ -50,7 +47,8 @@ object Sample {
   }
 
   def parseDocument(dbo: BSONObject) = {
-    (str(dbo.get("_id")),
+    (
+      str(dbo.get("_id")),
       str(dbo.get("activityId")),
       str(dbo.get("name").toString),
       str(dbo.get("phone").toString),
@@ -60,16 +58,16 @@ object Sample {
   }
 
   def str(o: Object) = o match {
-    case null => ""
-    case d: Date => formatDate.format(d)
+    case null              => ""
+    case d: Date           => formatDate.format(d)
     case ld: LocalDateTime => ld.format(formatterDateTime)
-    case s => s.toString.trim
+    case s                 => s.toString.trim
   }
 
   def ld(o: Object) = o match {
-    case d: Date => LocalDateTime.ofInstant(Instant.ofEpochMilli(d.getTime), ZoneId.systemDefault())
+    case d: Date          => LocalDateTime.ofInstant(Instant.ofEpochMilli(d.getTime), ZoneId.systemDefault())
     case d: LocalDateTime => d
-    case _ => LocalDateTime.MIN
+    case _                => LocalDateTime.MIN
   }
 
   val formatDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")

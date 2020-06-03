@@ -1,6 +1,6 @@
 package learnspark.intro
 
-import org.apache.spark.{SparkContext, SparkConf}
+import org.apache.spark.{ SparkContext, SparkConf }
 
 object WordCount {
   def main(args: Array[String]): Unit = {

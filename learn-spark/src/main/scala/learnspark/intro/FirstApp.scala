@@ -3,9 +3,9 @@ package learnspark.intro
 import org.apache.spark._
 
 /**
-  * First App for wordcount
-  * Created by yangjing on 15-7-23.
-  */
+ * First App for wordcount
+ * Created by yangjing on 15-7-23.
+ */
 object FirstApp {
   def main(args: Array[String]): Unit = {
     val inputFile = sys.env.getOrElse("SPARK_HOME", "/opt/local/spark-2.4.5-bin-hadoop-scala-2.12") + "/README.md"

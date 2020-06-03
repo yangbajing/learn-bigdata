@@ -1,6 +1,6 @@
 package learnspark.intro
 
-import java.nio.file.{Paths, Files}
+import java.nio.file.{ Paths, Files }
 
 import learnspark.UnitWordSpec
 

@@ -1,6 +1,6 @@
 package com.ibm.spark.exercise.basic
 
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.{ SparkConf, SparkContext }
 
 /**
  * 公司要统计过去一年搜索频率最高的 K 个科技关键词或词组

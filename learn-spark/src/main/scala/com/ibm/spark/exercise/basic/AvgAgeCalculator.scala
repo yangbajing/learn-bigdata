@@ -1,6 +1,6 @@
 package com.ibm.spark.exercise.basic
 
-import org.apache.spark.{SparkContext, SparkConf}
+import org.apache.spark.{ SparkContext, SparkConf }
 
 /**
  * 统计一个 1000 万人口的所有人的平均年龄

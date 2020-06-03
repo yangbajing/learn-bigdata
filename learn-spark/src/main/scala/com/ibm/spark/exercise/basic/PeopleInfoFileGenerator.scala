@@ -1,6 +1,6 @@
 package com.ibm.spark.exercise.basic
 
-import java.nio.file.{Paths, Files}
+import java.nio.file.{ Paths, Files }
 import java.security.SecureRandom
 
 /**
