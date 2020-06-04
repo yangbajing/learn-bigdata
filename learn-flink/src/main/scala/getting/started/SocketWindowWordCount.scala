@@ -1,4 +1,4 @@
-package spendreport.getting.started
+package getting.started
 
 import org.apache.flink.api.java.utils.ParameterTool
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment

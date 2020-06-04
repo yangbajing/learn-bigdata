@@ -24,11 +24,13 @@ lazy val learnSpark = _project("learn-spark").settings(
 
 lazy val learnFlink = _project("learn-flink").settings(
   libraryDependencies ++= Seq(
-      "org.apache.flink" %% "flink-walkthrough-common" % verFlink,
       "org.apache.flink" %% "flink-streaming-scala" % verFlink % Provided,
       "org.apache.flink" %% "flink-table-api-scala-bridge" % verFlink % Provided,
       "org.apache.flink" %% "flink-table-planner" % verFlink % Provided,
+      "org.apache.flink" %% "flink-walkthrough-common" % verFlink,
       "org.apache.flink" %% "flink-connector-kafka" % verFlink,
+      "org.apache.flink" % "flink-json" % verFlink,
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.10.1",
       "org.slf4j" % "slf4j-log4j12" % "1.7.7" % Runtime,
       "log4j" % "log4j" % "1.2.17" % Runtime))
 

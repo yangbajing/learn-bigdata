@@ -1,4 +1,4 @@
-package spendreport.getting.started
+package getting.started
 
 import org.scalatest.funsuite.AnyFunSuite
 

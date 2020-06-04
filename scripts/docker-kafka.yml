@@ -1,0 +1,30 @@
+version: '3'
+
+services:
+  kafka-zookeeper:
+    container_name: kafka-zookeeper
+    image: wurstmeister/zookeeper
+    #restart: on-failure
+    ports:
+      - "2181:2181"
+    networks:
+      - kafkanet
+
+  kafka-kafka:
+    container_name: kafka-kafka
+    image: wurstmeister/kafka:2.12-2.5.0
+    #restart: on-failure
+    ports:
+      - "9092:9092"
+    environment:
+      # 若需要在其它物理主机上访问此Kafka服务，此处应设置为物理主机实际IP地址
+      KAFKA_ADVERTISED_HOST_NAME: "localhost"
+      KAFKA_CREATE_TOPICS: "test:1:1"
+      KAFKA_ZOOKEEPER_CONNECT: kafka-zookeeper:2181
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - kafkanet
+
+networks:
+  kafkanet:
