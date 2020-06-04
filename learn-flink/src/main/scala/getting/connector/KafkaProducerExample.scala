@@ -1,6 +1,7 @@
 package getting.connector
 
 import java.io.Serializable
+import java.time.Instant
 import java.util.Properties
 
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -21,7 +22,8 @@ object KafkaProducerExample {
 
     val properties = new Properties()
     properties.setProperty("bootstrap.servers", "localhost:9092")
-    properties.setProperty("transactional.id", "test-001")
+    properties.setProperty("transaction.timeout.ms", s"${60 * 5 * 1000}")
+//    properties.setProperty("transaction.max.timeout.ms", s"${60 * 60 * 1000}")
     val producer = new FlinkKafkaProducer[NameTimestamp](
       topic, // 目标 topic
       new NameTimestampSerializationSchema(topic),
@@ -50,7 +52,7 @@ object KafkaProducerExample {
     override def next: NameTimestamp = {
       Thread.sleep(ThreadLocalRandom.current().nextLong(100, 1000))
       count += 1
-      NameTimestamp(Vector.fill(8)(Random.nextPrintableChar).mkString, System.currentTimeMillis())
+      NameTimestamp(Vector.fill(8)(Random.nextPrintableChar).mkString, Instant.now, count)
     }
   }
 
@@ -68,6 +70,7 @@ object KafkaProducerExample {
     override def serialize(
         element: NameTimestamp,
         timestamp: java.lang.Long): ProducerRecord[Array[Byte], Array[Byte]] = {
+      println(element)
       new ProducerRecord(topic, null, timestamp, null, mapper.writeValueAsBytes(element))
     }
   }

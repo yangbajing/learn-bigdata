@@ -1,6 +1,7 @@
 val verSpark = "2.4.5"
 val verHadoop = "2.7.7"
 val verFlink = "1.10.1"
+val verJackson = "2.10.1"
 
 ThisBuild / scalaVersion := "2.12.11"
 
@@ -30,7 +31,9 @@ lazy val learnFlink = _project("learn-flink").settings(
       "org.apache.flink" %% "flink-walkthrough-common" % verFlink,
       "org.apache.flink" %% "flink-connector-kafka" % verFlink,
       "org.apache.flink" % "flink-json" % verFlink,
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.10.1",
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % verJackson,
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % verJackson,
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % verJackson,
       "org.slf4j" % "slf4j-log4j12" % "1.7.7" % Runtime,
       "log4j" % "log4j" % "1.2.17" % Runtime))
 

@@ -22,7 +22,6 @@ object KafkaConsumerExample {
     properties.setProperty("bootstrap.servers", "localhost:9092")
     properties.setProperty("group.id", topic)
     properties.setProperty("isolation.level", "read_committed")
-    properties.setProperty("transaction.max.timeout.ms", "3600000")
 //    properties.setProperty("flink.partition-discovery.interval-millis", "5000") // Kafka 分区自动发现间隔（秒）
     val consumer =
       new FlinkKafkaConsumer[NameTimestamp](topic, new NameTimestampDeserializationSchema(), properties)
@@ -43,8 +42,9 @@ object KafkaConsumerExample {
     override def getCurrentWatermark: Watermark = new Watermark(curMaxTS - maxOutOfOrderness)
 
     override def extractTimestamp(element: NameTimestamp, previousElementTimestamp: Long): Long = {
-      curMaxTS = math.max(curMaxTS, element.t)
-      element.t
+      val ts = element.t.toEpochMilli
+      curMaxTS = math.max(curMaxTS, ts)
+      ts
     }
   }
 
