@@ -7,7 +7,7 @@ import learnspark.UnitWordSpec
 class WordCountTest extends UnitWordSpec {
   "WordCountTest" should {
     "run" in {
-      val inputFile = System.getenv("SPARK_HOME") + "/README.md"
+      val inputFile = sys.env.getOrElse("SPARK_HOME", "/opt/local/spark-2.4.5-bin-hadoop-scala-2.12") + "/README.md"
       val outputFile = "/tmp/learnspark/firstApp"
 
       Files.deleteIfExists(Paths.get(outputFile))

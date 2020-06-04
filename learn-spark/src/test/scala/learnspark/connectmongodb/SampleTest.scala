@@ -1,16 +1,15 @@
 package learnspark.connectmongodb
 
-import com.mongodb.BasicDBObject
-import com.mongodb.hadoop.{ MongoOutputFormat, MongoInputFormat }
+import com.mongodb.hadoop.MongoInputFormat
 import org.apache.hadoop.conf.Configuration
-import org.apache.spark.{ SparkContext, SparkConf }
+import org.apache.spark.{ SparkConf, SparkContext }
 import org.bson.BSONObject
-import org.scalatest.WordSpec
+import org.scalatest.wordspec.AnyWordSpec
 
 /**
  * Created by Yang Jing (yangbajing@gmail.com) on 2015-08-22.
  */
-class SampleTest extends WordSpec {
+class SampleTest extends AnyWordSpec {
   val sparkConf = new SparkConf().setAppName("SparkExample").setMaster("local")
   val sc = new SparkContext(sparkConf)
 

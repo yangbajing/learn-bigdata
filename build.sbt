@@ -1,4 +1,3 @@
-val scopeProvidedTest = "provided,test"
 val verSpark = "2.4.5"
 val verHadoop = "2.7.7"
 val verFlink = "1.10.1"
@@ -11,10 +10,10 @@ lazy val learnBigdata = Project("learn-bigdata", file(".")).aggregate(learnSpark
 
 lazy val learnSpark = _project("learn-spark").settings(
   libraryDependencies ++= Seq(
-      "org.apache.spark" %% "spark-core" % verSpark % scopeProvidedTest,
-      "org.apache.spark" %% "spark-sql" % verSpark % scopeProvidedTest,
-      "org.apache.spark" %% "spark-streaming" % verSpark % scopeProvidedTest,
-      //"org.apache.spark" %% "spark-streaming-kafka" % verSpark % scopeProvidedTest,
+      "org.apache.spark" %% "spark-core" % verSpark % Provided,
+      "org.apache.spark" %% "spark-sql" % verSpark % Provided,
+      "org.apache.spark" %% "spark-streaming" % verSpark % Provided,
+      //"org.apache.spark" %% "spark-streaming-kafka" % verSpark % Provided,
       ("org.apache.hadoop" % "hadoop-client" % verHadoop)
         .excludeAll(ExclusionRule(organization = "javax.servlet"))
         .exclude("commons-beanutils", "commons-beanutils-core"),
@@ -26,7 +25,10 @@ lazy val learnSpark = _project("learn-spark").settings(
 lazy val learnFlink = _project("learn-flink").settings(
   libraryDependencies ++= Seq(
       "org.apache.flink" %% "flink-walkthrough-common" % verFlink,
-      "org.apache.flink" %% "flink-streaming-scala" % verFlink,
+      "org.apache.flink" %% "flink-streaming-scala" % verFlink % Provided,
+      "org.apache.flink" %% "flink-table-api-scala-bridge" % verFlink % Provided,
+      "org.apache.flink" %% "flink-table-planner" % verFlink % Provided,
+      "org.apache.flink" %% "flink-connector-kafka" % verFlink,
       "org.slf4j" % "slf4j-log4j12" % "1.7.7" % Runtime,
       "log4j" % "log4j" % "1.2.17" % Runtime))
 
@@ -57,4 +59,5 @@ def basicSettings =
       case PathList("org", "apache", "commons", "collections", _*) => MergeStrategy.first
       case x                                                       => (assemblyMergeStrategy in assembly).value.apply(x)
     },
+    fork in run := true,
     libraryDependencies ++= Seq("org.scalatest" %% "scalatest" % "3.1.1" % "test"))
