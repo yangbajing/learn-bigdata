@@ -1,4 +1,4 @@
-package getting.connector
+package connector.kafka
 
 import org.scalatest.funsuite.AnyFunSuite
 
