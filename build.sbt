@@ -9,8 +9,9 @@ ThisBuild / scalafmtOnCompile := true
 
 lazy val learnBigdata = Project("learn-bigdata", file(".")).aggregate(learnSpark, learnFlink)
 
-lazy val learnSpark = _project("learn-spark").settings(
-  libraryDependencies ++= Seq(
+lazy val learnSpark = _project("learn-spark")
+  .dependsOn(learnCommon)
+  .settings(libraryDependencies ++= Seq(
       "org.apache.spark" %% "spark-core" % verSpark % Provided,
       "org.apache.spark" %% "spark-sql" % verSpark % Provided,
       "org.apache.spark" %% "spark-streaming" % verSpark % Provided,
@@ -23,19 +24,22 @@ lazy val learnSpark = _project("learn-spark").settings(
         .exclude("commons-beanutils", "commons-beanutils-core"),
       "org.postgresql" % "postgresql" % "42.2.10"))
 
-lazy val learnFlink = _project("learn-flink").settings(
-  libraryDependencies ++= Seq(
+lazy val learnFlink = _project("learn-flink")
+  .dependsOn(learnCommon)
+  .settings(libraryDependencies ++= Seq(
       "org.apache.flink" %% "flink-streaming-scala" % verFlink % Provided,
       "org.apache.flink" %% "flink-table-api-scala-bridge" % verFlink % Provided,
       "org.apache.flink" %% "flink-table-planner" % verFlink % Provided,
       "org.apache.flink" %% "flink-walkthrough-common" % verFlink,
       "org.apache.flink" %% "flink-connector-kafka" % verFlink,
-      "org.apache.flink" % "flink-json" % verFlink,
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % verJackson,
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % verJackson,
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % verJackson,
+      "mysql" % "mysql-connector-java" % "8.0.20",
       "org.slf4j" % "slf4j-log4j12" % "1.7.7" % Runtime,
       "log4j" % "log4j" % "1.2.17" % Runtime))
+
+lazy val learnCommon = _project("learn-common")
 
 def _project(name: String) = Project(name, file(name)).settings(basicSettings: _*)
 
