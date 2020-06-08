@@ -16,16 +16,18 @@ import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer
 import org.apache.flink.util.Collector
+import org.slf4j.LoggerFactory
 
 object KafkaConsumerExample {
-  val WATERMARK_INTERVAL: Long = 10 * 1000
+  val WATERMARK_INTERVAL: Long = 2 * 1000
+
   def main(args: Array[String]): Unit = {
     val topic = "test-json"
 
     val env = StreamExecutionEnvironment.getExecutionEnvironment
     env.enableCheckpointing(5000) // 每隔 5000 毫秒 执行一次 checkpoint，可启用容错的 Kafka Consumer
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
-    env.getConfig.setAutoWatermarkInterval(1000)
+    env.getConfig.setAutoWatermarkInterval(WATERMARK_INTERVAL)
 
     val properties = new Properties()
     properties.setProperty("bootstrap.servers", "localhost:9092")
@@ -34,10 +36,14 @@ object KafkaConsumerExample {
 //    properties.setProperty("flink.partition-discovery.interval-millis", "5000") // Kafka 分区自动发现间隔（秒）
     val consumer =
       new FlinkKafkaConsumer[NameTimestamp](topic, new NameTimestampDeserializationSchema(), properties)
-      //    .setStartFromEarliest()      // 尽可能从最早的记录开始
-      //    .setStartFromLatest() // 从最新的记录开始
-      //    .setStartFromTimestamp(System.currentTimeMillis())  // 从指定的时间开始（毫秒）
-      //    .setStartFromGroupOffsets()  // 默认的方法
+      //    // 尽可能从最早的记录开始
+      //    .setStartFromEarliest()
+      //    // 从最新的记录开始
+      //    .setStartFromLatest()
+      //    // 从指定的时间开始（毫秒）
+      //    .setStartFromTimestamp(System.currentTimeMillis())
+      //    // 默认的方法
+      //    .setStartFromGroupOffsets()
         .assignTimestampsAndWatermarks(new CustomWatermarkEmitter())
 
 //    val lateData = new OutputTag[NameTimestamp]("LateData")
@@ -46,14 +52,7 @@ object KafkaConsumerExample {
       .addSource(consumer)
       .windowAll(TumblingEventTimeWindows.of(Time.seconds(5)))
       //      .sideOutputLateData(lateData)
-      .process(new ProcessAllWindowFunction[NameTimestamp, Seq[NameTimestamp], TimeWindow] {
-        override def process(context: Context, elements: Iterable[NameTimestamp], out: Collector[Seq[NameTimestamp]])
-            : Unit = {
-          val value = elements.toList
-          println(s"[${context.window.getStart} ${context.window.getEnd}), ${value.map(_.seq)}")
-          out.collect(value)
-        }
-      })
+      .process(new CustomWindowProcess())
       .name("window-process")
 
     stream.addSink(
@@ -69,7 +68,7 @@ object KafkaConsumerExample {
         },
         new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
           .withDriverName("com.mysql.cj.jdbc.Driver")
-          .withUrl("jdbc:mysql://localhost:3306/bigdata")
+          .withUrl("jdbc:mysql://localhost:3306/bigdata?serverTimezone=Asia/Shanghai")
           .withUsername("bigdata")
           .withPassword("Bigdata.2020")
           .build))
@@ -83,31 +82,45 @@ object KafkaConsumerExample {
 
     env.execute("Kafka Consumer Example")
   }
+}
 
-  private class CustomWatermarkEmitter extends AssignerWithPeriodicWatermarks[NameTimestamp] {
-    private val outLatenessTS = 2000L
-    @volatile private var curMaxTS = 0L
-    private var wm: Watermark = _
-    override def getCurrentWatermark: Watermark = {
-      wm = new Watermark(curMaxTS /* - outLatenessTS*/ )
-      wm
-    }
+class CustomWindowProcess extends ProcessAllWindowFunction[NameTimestamp, Seq[NameTimestamp], TimeWindow] {
+  override def process(
+      context: Context,
+      elements: Iterable[NameTimestamp],
+      out: Collector[Seq[NameTimestamp]]): Unit = {
+    val value = elements.toList
+    println(s"[${context.window.getStart} ${context.window.getEnd}), ${value.map(_.seq)}")
+    out.collect(value)
+  }
+}
 
-    override def extractTimestamp(element: NameTimestamp, previousElementTimestamp: Long): Long = {
-      val ts = element.t.toEpochMilli
-//      curMaxTS = if (ts > curMaxTS) curMaxTS + WATERMARK_INTERVAL else curMaxTS
-      curMaxTS = math.max(curMaxTS, ts)
-      println(s"$element, $curMaxTS, $wm")
-      ts
-    }
+class CustomWatermarkEmitter extends AssignerWithPeriodicWatermarks[NameTimestamp] {
+  private val logger = LoggerFactory.getLogger(getClass)
+
+  private val outLatenessTS = 2000L
+  @volatile private var curMaxTS = 0L
+  private var wm: Watermark = _
+  override def getCurrentWatermark: Watermark = {
+    wm = new Watermark(curMaxTS - outLatenessTS)
+    logger.trace(s"Generate watermark is [$wm].")
+    wm
   }
 
-  private class NameTimestampDeserializationSchema() extends AbstractDeserializationSchema[NameTimestamp] {
-    private lazy val mapper = new ObjectMapper().findAndRegisterModules()
-    override def deserialize(message: Array[Byte]): NameTimestamp = {
-      val value = mapper.readValue(message, classOf[NameTimestamp])
-//      println("Receive: " + value)
-      value
-    }
+  override def extractTimestamp(element: NameTimestamp, previousElementTimestamp: Long): Long = {
+    val ts = element.t.toEpochMilli
+    //      curMaxTS = if (ts > curMaxTS) curMaxTS + WATERMARK_INTERVAL else curMaxTS
+    curMaxTS = math.max(curMaxTS, ts)
+    logger.debug(s"$element, $curMaxTS, $wm")
+    ts
+  }
+}
+
+class NameTimestampDeserializationSchema() extends AbstractDeserializationSchema[NameTimestamp] {
+  private lazy val mapper = new ObjectMapper().findAndRegisterModules()
+  override def deserialize(message: Array[Byte]): NameTimestamp = {
+    val value = mapper.readValue(message, classOf[NameTimestamp])
+    //      println("Receive: " + value)
+    value
   }
 }
