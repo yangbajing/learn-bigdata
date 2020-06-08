@@ -1,9 +1,10 @@
 package connector.kafka
 
+import java.sql.PreparedStatement
 import java.util.Properties
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import learn.common.util.TimeUtils
+import connector.jdbc.{ JdbcConnectionOptions, JdbcSink, JdbcStatementBuilder }
 import org.apache.flink.api.common.serialization.AbstractDeserializationSchema
 import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.functions.AssignerWithPeriodicWatermarks
@@ -24,7 +25,7 @@ object KafkaConsumerExample {
     val env = StreamExecutionEnvironment.getExecutionEnvironment
     env.enableCheckpointing(5000) // 每隔 5000 毫秒 执行一次 checkpoint，可启用容错的 Kafka Consumer
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
-    env.getConfig.setAutoWatermarkInterval(200)
+    env.getConfig.setAutoWatermarkInterval(1000)
 
     val properties = new Properties()
     properties.setProperty("bootstrap.servers", "localhost:9092")
@@ -39,36 +40,56 @@ object KafkaConsumerExample {
       //    .setStartFromGroupOffsets()  // 默认的方法
         .assignTimestampsAndWatermarks(new CustomWatermarkEmitter())
 
-    val lateData = new OutputTag[NameTimestamp]("LateData")
+//    val lateData = new OutputTag[NameTimestamp]("LateData")
 
     val stream = env
       .addSource(consumer)
       .windowAll(TumblingEventTimeWindows.of(Time.seconds(5)))
-      .sideOutputLateData(lateData)
-      .process(new ProcessAllWindowFunction[NameTimestamp, List[Int], TimeWindow] {
-        override def process(context: Context, elements: Iterable[NameTimestamp], out: Collector[List[Int]]): Unit = {
-          val value = elements.map(_.seq).toList
-          println(s"[${context.window.getStart} ${context.window.getEnd}), $value")
-          out.collect(value.sorted)
+      //      .sideOutputLateData(lateData)
+      .process(new ProcessAllWindowFunction[NameTimestamp, Seq[NameTimestamp], TimeWindow] {
+        override def process(context: Context, elements: Iterable[NameTimestamp], out: Collector[Seq[NameTimestamp]])
+            : Unit = {
+          val value = elements.toList
+          println(s"[${context.window.getStart} ${context.window.getEnd}), ${value.map(_.seq)}")
+          out.collect(value)
         }
       })
       .name("window-process")
 
-    stream.print()
+    stream.addSink(
+      JdbcSink.sink[Seq[NameTimestamp]](
+        "insert into name_test(name, t, seq) values(?, ?, ?)",
+        new JdbcStatementBuilder[Seq[NameTimestamp]] {
+          override def accept(pstmt: PreparedStatement, values: Seq[NameTimestamp]): Unit = values.foreach { value =>
+            pstmt.setString(1, value.name)
+            pstmt.setTimestamp(2, java.sql.Timestamp.from(value.t))
+            pstmt.setInt(3, value.seq)
+            pstmt.addBatch()
+          }
+        },
+        new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
+          .withDriverName("com.mysql.cj.jdbc.Driver")
+          .withUrl("jdbc:mysql://localhost:3306/bigdata")
+          .withUsername("bigdata")
+          .withPassword("Bigdata.2020")
+          .build))
 
-    stream.getSideOutput(lateData).map { nt =>
-      println(s"延迟数据：$nt")
-      nt
-    }
+//    stream.print()
+
+//    stream.getSideOutput(lateData).map { nt =>
+//      println(s"延迟数据：$nt")
+//      nt
+//    }
 
     env.execute("Kafka Consumer Example")
   }
 
   private class CustomWatermarkEmitter extends AssignerWithPeriodicWatermarks[NameTimestamp] {
+    private val outLatenessTS = 2000L
     @volatile private var curMaxTS = 0L
     private var wm: Watermark = _
     override def getCurrentWatermark: Watermark = {
-      wm = new Watermark(curMaxTS /*- WATERMARK_INTERVAL*/ )
+      wm = new Watermark(curMaxTS /* - outLatenessTS*/ )
       wm
     }
 
