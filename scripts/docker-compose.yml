@@ -41,5 +41,18 @@ services:
     networks:
       - bigdatanet
 
+  bd-postgres:
+    container_name: bd-postgres
+    build:
+      context: ./software/postgres
+      dockerfile: Dockerfile
+    #restart: on-failure
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: Bigdata.2020
+    networks:
+      - bigdatanet
+
 networks:
   bigdatanet:

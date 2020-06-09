@@ -32,6 +32,8 @@ lazy val learnFlink = _project("learn-flink")
       "org.apache.flink" %% "flink-table-planner" % verFlink % Provided,
       "org.apache.flink" %% "flink-walkthrough-common" % verFlink,
       "org.apache.flink" %% "flink-connector-kafka" % verFlink,
+      "org.apache.flink" %% "flink-jdbc" % verFlink,
+      "org.apache.flink" %% "flink-cep-scala" % verFlink,
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % verJackson,
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % verJackson,
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % verJackson,
