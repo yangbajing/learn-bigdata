@@ -16,8 +16,9 @@
       "name": "favoriteNumber",
       "type": [
         "null",
-        "int"
-      ]
+        "double"
+      ],
+      "max": 255.0
     },
     {
       "name": "favoriteColor",
@@ -26,7 +27,7 @@
         "string"
       ],
       "max": 5,
-      "min": 5
+      "min": 1
     },
     {
       "name": "sex",

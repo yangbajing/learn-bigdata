@@ -2,6 +2,7 @@ package learn.avro.util
 
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Type
+import scala.jdk.CollectionConverters._
 
 final class CheckOption(f: Schema.Field, datum: Object) {
   private val props = f.getObjectProps
@@ -12,7 +13,11 @@ final class CheckOption(f: Schema.Field, datum: Object) {
   }
 
   def check(): Unit = {
-    f.schema().getType match {
+    check(f.schema().getType)
+  }
+
+  def check(typ: Type): Unit = {
+    typ match {
       case Type.STRING =>
         val v = datum.asInstanceOf[String]
         checkMax(v)
@@ -33,6 +38,11 @@ final class CheckOption(f: Schema.Field, datum: Object) {
         val v = datum.asInstanceOf[java.lang.Double]
         checkMin(v)
         checkMax(v)
+      case Type.UNION =>
+        val types = f.schema().getTypes.asScala.filterNot(_.getType == Type.NULL)
+        if (types.nonEmpty) {
+          check(types.map(_.getType).head)
+        }
       case _ =>
     }
   }
@@ -51,40 +61,19 @@ final class CheckOption(f: Schema.Field, datum: Object) {
     }
   }
 
-  private def checkMax(v: Integer): Unit = {
-    props.get("max") match {
-      case max: Integer => require(v <= max, s"Integer must be <= $max, received [${f.name()}] is $v.")
-      case _            => // do nothing
+  private def checkMax[T <: Comparable[T]](v: T): Unit = {
+    val obj = props.get("max")
+    if (obj != null) {
+      val max = obj.asInstanceOf[Comparable[T]]
+      require(max.compareTo(v) >= 0, s"${max.getClass.getSimpleName} must be <= $max, received [${f.name()}] is $v.")
     }
   }
 
-  private def checkMax(v: java.lang.Long): Unit = {
-    props.get("max") match {
-      case max: java.lang.Long => require(v <= max, s"Integer must be <= $max, received [${f.name()}] is $v.")
-      case _                   => // do nothing
-    }
-  }
-
-  private def checkMax(v: java.lang.Float): Unit = {
-    props.get("max") match {
-      case max: java.lang.Float => require(v <= max, s"Integer must be <= $max, received [${f.name()}] is $v.")
-      case _                    => // do nothing
-    }
-  }
-
-  private def checkMax[T <: Number with Comparable[T]](v: T): Unit = {
+  private def checkMin[T <: Comparable[T]](v: T): Unit = {
     val obj = props.get("min")
     if (obj != null) {
-      val max = obj.asInstanceOf[T]
-      require(v.compareTo(max) <= 0, s"${max.getClass.getSimpleName} must be <= $max, received [${f.name()}] is $v.")
-    }
-  }
-
-  private def checkMin[T <: Number with Comparable[T]](v: T): Unit = {
-    val obj = props.get("min")
-    if (obj != null) {
-      val min = obj.asInstanceOf[T]
-      require(v.compareTo(min) >= 0, s"${min.getClass.getSimpleName} must be >= $min, received [${f.name()}] is $v.")
+      val min = obj.asInstanceOf[Comparable[T]]
+      require(min.compareTo(v) <= 0, s"${min.getClass.getSimpleName} must be >= $min, received [${f.name()}] is $v.")
     }
   }
 }
