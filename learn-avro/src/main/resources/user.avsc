@@ -1,0 +1,65 @@
+{
+  "namespace": "com.zq.avro",
+  "name": "User",
+  "type": "record",
+  "fields": [
+    {
+      "name": "name",
+      "type": "string",
+      "max": 5
+    },
+    {
+      "name": "dataSchema",
+      "type": "string"
+    },
+    {
+      "name": "favoriteNumber",
+      "type": [
+        "null",
+        "int"
+      ]
+    },
+    {
+      "name": "favoriteColor",
+      "type": [
+        "null",
+        "string"
+      ],
+      "max": 5,
+      "min": 5
+    },
+    {
+      "name": "sex",
+      "type": {
+        "name": "Sex",
+        "type": "enum",
+        "symbols": [
+          "NONE",
+          "MALE",
+          "FEMALE",
+          "MIDDLE"
+        ]
+      }
+    },
+    {
+      "name": "data",
+      "type": {
+        "name": "SubData",
+        "type": "record",
+        "fields": [
+          {
+            "name": "name",
+            "type": "string",
+            "max": 5
+          },
+          {
+            "name": "age",
+            "type": "int",
+            "min": 1,
+            "max": 150
+          }
+        ]
+      }
+    }
+  ]
+}

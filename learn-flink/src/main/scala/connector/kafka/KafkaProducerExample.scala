@@ -65,7 +65,11 @@ object KafkaProducerExample {
           None
         case _ =>
           Thread.sleep(ThreadLocalRandom.current().nextLong(200, 1000))
-          Some(NameTimestamp(Vector.fill(8)(Random.nextPrintableChar).mkString, Instant.now(), count))
+          Some(
+            NameTimestamp(
+              Vector.fill(8)(Random.nextPrintableChar).mkString,
+              java.sql.Timestamp.from(Instant.now()),
+              count))
       }
     }
   }
@@ -82,7 +86,7 @@ object KafkaProducerExample {
         element: NameTimestamp,
         timestamp: java.lang.Long): ProducerRecord[Array[Byte], Array[Byte]] = {
       println(element)
-      new ProducerRecord(topic, null, element.t.toEpochMilli, null, mapper.writeValueAsBytes(element))
+      new ProducerRecord(topic, null, element.t.getTime, null, mapper.writeValueAsBytes(element))
     }
 
     override def getTargetTopic(element: NameTimestamp): String = topic

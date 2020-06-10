@@ -1,12 +1,13 @@
 package connector.kafka
 
-import java.sql.PreparedStatement
 import java.util.Properties
+import java.util.concurrent.TimeUnit
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import connector.jdbc.{ JdbcConnectionOptions, JdbcSink, JdbcStatementBuilder }
 import org.apache.flink.api.common.serialization.AbstractDeserializationSchema
+import org.apache.flink.api.java.io.jdbc.{ JDBCOutputFormat, JDBCOutputFormatSinkFunction }
 import org.apache.flink.streaming.api.TimeCharacteristic
+import org.apache.flink.streaming.api.datastream.DataStreamSink
 import org.apache.flink.streaming.api.functions.AssignerWithPeriodicWatermarks
 import org.apache.flink.streaming.api.scala._
 import org.apache.flink.streaming.api.scala.function.ProcessAllWindowFunction
@@ -15,11 +16,13 @@ import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindo
 import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer
+import org.apache.flink.table.api.scala.StreamTableEnvironment
+import org.apache.flink.types.Row
 import org.apache.flink.util.Collector
 import org.slf4j.LoggerFactory
 
 object KafkaConsumerExample {
-  val WATERMARK_INTERVAL: Long = 2 * 1000
+  val WATERMARK_INTERVAL: Long = TimeUnit.SECONDS.toMillis(2)
 
   def main(args: Array[String]): Unit = {
     val topic = "test-json"
@@ -27,6 +30,7 @@ object KafkaConsumerExample {
     val env = StreamExecutionEnvironment.getExecutionEnvironment
     env.enableCheckpointing(5000) // 每隔 5000 毫秒 执行一次 checkpoint，可启用容错的 Kafka Consumer
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
+    env.setParallelism(1)
     env.getConfig.setAutoWatermarkInterval(WATERMARK_INTERVAL)
 
     val properties = new Properties()
@@ -46,61 +50,85 @@ object KafkaConsumerExample {
       //    .setStartFromGroupOffsets()
         .assignTimestampsAndWatermarks(new CustomWatermarkEmitter())
 
-//    val lateData = new OutputTag[NameTimestamp]("LateData")
+    val lateData = new OutputTag[NameTimestamp]("LateData")
 
-    val stream = env
+    val input = env
       .addSource(consumer)
       .windowAll(TumblingEventTimeWindows.of(Time.seconds(5)))
-      //      .sideOutputLateData(lateData)
+      .allowedLateness(Time.hours(1))
+      .sideOutputLateData(lateData)
       .process(new CustomWindowProcess())
       .name("window-process")
+      .flatMap(v => v)
 
-    stream.addSink(
-      JdbcSink.sink[Seq[NameTimestamp]](
-        "insert into name_test(name, t, seq) values(?, ?, ?)",
-        new JdbcStatementBuilder[Seq[NameTimestamp]] {
-          override def accept(pstmt: PreparedStatement, values: Seq[NameTimestamp]): Unit = values.foreach { value =>
-            pstmt.setString(1, value.name)
-            pstmt.setTimestamp(2, java.sql.Timestamp.from(value.t))
-            pstmt.setInt(3, value.seq)
-            pstmt.addBatch()
-          }
-        },
-        new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
-          .withDriverName("com.mysql.cj.jdbc.Driver")
-          .withUrl("jdbc:mysql://localhost:3306/bigdata?serverTimezone=Asia/Shanghai")
-          .withUsername("bigdata")
-          .withPassword("Bigdata.2020")
-          .build))
+    input.getSideOutput(lateData).print("Lately data.")
 
-//    stream.print()
+//    writeWithJDBCOutputFormat(input)
 
-//    stream.getSideOutput(lateData).map { nt =>
-//      println(s"延迟数据：$nt")
-//      nt
-//    }
+    writeWithTableSQL(env, input)
 
     env.execute("Kafka Consumer Example")
+  }
+
+  private def writeWithTableSQL(env: StreamExecutionEnvironment, input: DataStream[NameTimestamp]): Unit = {
+    val tEnv = StreamTableEnvironment.create(env)
+    tEnv.sqlUpdate("""create table MySQLNameTest(
+        |  name varchar,
+        |  t timestamp,
+        |  seq int
+        |) with (
+        |  'connector.type' = 'jdbc',
+        |  'connector.url' = 'jdbc:mysql://localhost:3306/bigdata?serverTimezone=Asia/Shanghai',
+        |  'connector.table' = 'name_test',
+        |  'connector.driver' = 'com.mysql.cj.jdbc.Driver',
+        |  'connector.username' = 'bigdata',
+        |  'connector.password' = 'Bigdata.2020'
+        |)""".stripMargin)
+    val table = tEnv.fromDataStream(input)
+    table.insertInto("MySQLNameTest")
+  }
+
+  private def writeWithJDBCOutputFormat(input: DataStream[NameTimestamp]): DataStreamSink[Row] = {
+    val jdbcOutputFormat = JDBCOutputFormat
+      .buildJDBCOutputFormat()
+      .setDrivername("com.mysql.cj.jdbc.Driver")
+      .setDBUrl("jdbc:mysql://localhost:3306/bigdata?serverTimezone=Asia/Shanghai")
+      .setUsername("bigdata")
+      .setPassword("Bigdata.2020")
+      .setBatchInterval(5000)
+      .setQuery("insert into name_test(name, t, seq) values(?, ?, ?)")
+      .setSqlTypes(Array(java.sql.Types.VARCHAR, java.sql.Types.TIMESTAMP, java.sql.Types.INTEGER))
+      .finish()
+    val rowStream = input.map { v =>
+      val row = new Row(3)
+      row.setField(0, v.name)
+      row.setField(1, v.t)
+      row.setField(2, v.seq)
+      row
+    }
+    rowStream.addSink(new JDBCOutputFormatSinkFunction(jdbcOutputFormat)).name("sink-to-mysql")
   }
 }
 
 class CustomWindowProcess extends ProcessAllWindowFunction[NameTimestamp, Seq[NameTimestamp], TimeWindow] {
+  private val logger = LoggerFactory.getLogger(getClass)
+
   override def process(
       context: Context,
       elements: Iterable[NameTimestamp],
       out: Collector[Seq[NameTimestamp]]): Unit = {
     val value = elements.toList
-    println(s"[${context.window.getStart} ${context.window.getEnd}), ${value.map(_.seq)}")
+    logger.debug(s"[${context.window.getStart} ${context.window.getEnd}), ${value.map(_.seq)}")
     out.collect(value)
   }
 }
 
 class CustomWatermarkEmitter extends AssignerWithPeriodicWatermarks[NameTimestamp] {
   private val logger = LoggerFactory.getLogger(getClass)
-
   private val outLatenessTS = 2000L
-  @volatile private var curMaxTS = 0L
+  private var curMaxTS = 0L
   private var wm: Watermark = _
+
   override def getCurrentWatermark: Watermark = {
     wm = new Watermark(curMaxTS - outLatenessTS)
     logger.trace(s"Generate watermark is [$wm].")
@@ -108,7 +136,7 @@ class CustomWatermarkEmitter extends AssignerWithPeriodicWatermarks[NameTimestam
   }
 
   override def extractTimestamp(element: NameTimestamp, previousElementTimestamp: Long): Long = {
-    val ts = element.t.toEpochMilli
+    val ts = element.t.getTime
     //      curMaxTS = if (ts > curMaxTS) curMaxTS + WATERMARK_INTERVAL else curMaxTS
     curMaxTS = math.max(curMaxTS, ts)
     logger.debug(s"$element, $curMaxTS, $wm")
@@ -118,9 +146,5 @@ class CustomWatermarkEmitter extends AssignerWithPeriodicWatermarks[NameTimestam
 
 class NameTimestampDeserializationSchema() extends AbstractDeserializationSchema[NameTimestamp] {
   private lazy val mapper = new ObjectMapper().findAndRegisterModules()
-  override def deserialize(message: Array[Byte]): NameTimestamp = {
-    val value = mapper.readValue(message, classOf[NameTimestamp])
-    //      println("Receive: " + value)
-    value
-  }
+  override def deserialize(message: Array[Byte]): NameTimestamp = mapper.readValue(message, classOf[NameTimestamp])
 }
