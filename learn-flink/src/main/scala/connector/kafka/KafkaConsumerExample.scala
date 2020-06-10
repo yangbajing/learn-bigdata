@@ -5,8 +5,9 @@ import java.util.concurrent.TimeUnit
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.flink.api.common.serialization.AbstractDeserializationSchema
-import org.apache.flink.api.java.io.jdbc.{JDBCOutputFormat, JDBCOutputFormatSinkFunction}
+import org.apache.flink.api.java.io.jdbc.{ JDBCOutputFormat, JDBCOutputFormatSinkFunction }
 import org.apache.flink.streaming.api.TimeCharacteristic
+import org.apache.flink.streaming.api.datastream.DataStreamSink
 import org.apache.flink.streaming.api.functions.AssignerWithPeriodicWatermarks
 import org.apache.flink.streaming.api.scala._
 import org.apache.flink.streaming.api.scala.function.ProcessAllWindowFunction
@@ -15,6 +16,7 @@ import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindo
 import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer
+import org.apache.flink.table.api.scala.StreamTableEnvironment
 import org.apache.flink.types.Row
 import org.apache.flink.util.Collector
 import org.slf4j.LoggerFactory
@@ -48,16 +50,45 @@ object KafkaConsumerExample {
       //    .setStartFromGroupOffsets()
         .assignTimestampsAndWatermarks(new CustomWatermarkEmitter())
 
-//    val lateData = new OutputTag[NameTimestamp]("LateData")
+    val lateData = new OutputTag[NameTimestamp]("LateData")
 
-    val stream = env
+    val input = env
       .addSource(consumer)
       .windowAll(TumblingEventTimeWindows.of(Time.seconds(5)))
       .allowedLateness(Time.hours(1))
-      //      .sideOutputLateData(lateData)
+      .sideOutputLateData(lateData)
       .process(new CustomWindowProcess())
       .name("window-process")
+      .flatMap(v => v)
 
+    input.getSideOutput(lateData).print("Lately data.")
+
+//    writeWithJDBCOutputFormat(input)
+
+    writeWithTableSQL(env, input)
+
+    env.execute("Kafka Consumer Example")
+  }
+
+  private def writeWithTableSQL(env: StreamExecutionEnvironment, input: DataStream[NameTimestamp]): Unit = {
+    val tEnv = StreamTableEnvironment.create(env)
+    tEnv.sqlUpdate("""create table MySQLNameTest(
+        |  name varchar,
+        |  t timestamp,
+        |  seq int
+        |) with (
+        |  'connector.type' = 'jdbc',
+        |  'connector.url' = 'jdbc:mysql://localhost:3306/bigdata?serverTimezone=Asia/Shanghai',
+        |  'connector.table' = 'name_test',
+        |  'connector.driver' = 'com.mysql.cj.jdbc.Driver',
+        |  'connector.username' = 'bigdata',
+        |  'connector.password' = 'Bigdata.2020'
+        |)""".stripMargin)
+    val table = tEnv.fromDataStream(input)
+    table.insertInto("MySQLNameTest")
+  }
+
+  private def writeWithJDBCOutputFormat(input: DataStream[NameTimestamp]): DataStreamSink[Row] = {
     val jdbcOutputFormat = JDBCOutputFormat
       .buildJDBCOutputFormat()
       .setDrivername("com.mysql.cj.jdbc.Driver")
@@ -68,7 +99,7 @@ object KafkaConsumerExample {
       .setQuery("insert into name_test(name, t, seq) values(?, ?, ?)")
       .setSqlTypes(Array(java.sql.Types.VARCHAR, java.sql.Types.TIMESTAMP, java.sql.Types.INTEGER))
       .finish()
-    val rowStream = stream.flatMap(v => v).map { v =>
+    val rowStream = input.map { v =>
       val row = new Row(3)
       row.setField(0, v.name)
       row.setField(1, v.t)
@@ -76,16 +107,6 @@ object KafkaConsumerExample {
       row
     }
     rowStream.addSink(new JDBCOutputFormatSinkFunction(jdbcOutputFormat)).name("sink-to-mysql")
-
-//    stream.print()
-
-//    stream.getSideOutput(lateData).map { nt =>
-//      println(s"延迟数据：$nt")
-//      nt
-//    }
-//    tableEnv.execute("Kafka Consumer insert to MySQL")
-
-    env.execute("Kafka Consumer Example")
   }
 }
 

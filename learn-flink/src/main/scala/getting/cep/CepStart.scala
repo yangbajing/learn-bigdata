@@ -36,7 +36,6 @@ object CepStart {
 
     val result = patternStream.process(new PatternProcessFunction[Event, Alert]() {
       def createAlertFrom(pattern: Pattern[Event, Event]): Alert = {
-
         ???
       }
 

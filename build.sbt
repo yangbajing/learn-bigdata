@@ -7,7 +7,15 @@ ThisBuild / scalaVersion := "2.12.11"
 
 ThisBuild / scalafmtOnCompile := true
 
-lazy val learnBigdata = Project("learn-bigdata", file(".")).aggregate(learnSpark, learnFlink)
+lazy val learnBigdata = Project("learn-bigdata", file(".")).aggregate(learnSpark, learnFlink, learnAvro)
+
+lazy val learnAvro = _project("learn-avro")
+  .dependsOn(learnCommon)
+  .settings(
+    avroSource := sourceDirectory.value / "resources",
+    libraryDependencies ++= Seq(
+        "org.apache.avro" % "avro" % "1.9.2",
+        "ch.qos.logback" % "logback-classic" % "1.2.3" % Test.extend(Provided)))
 
 lazy val learnSpark = _project("learn-spark")
   .dependsOn(learnCommon)
@@ -33,11 +41,13 @@ lazy val learnFlink = _project("learn-flink")
       "org.apache.flink" %% "flink-walkthrough-common" % verFlink,
       "org.apache.flink" %% "flink-connector-kafka" % verFlink,
       "org.apache.flink" %% "flink-jdbc" % verFlink,
+      "org.apache.flink" % "flink-json" % verFlink,
       "org.apache.flink" %% "flink-cep-scala" % verFlink,
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % verJackson,
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % verJackson,
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % verJackson,
       "mysql" % "mysql-connector-java" % "8.0.20",
+      "org.postgresql" % "postgresql" % "42.2.10",
       "org.slf4j" % "slf4j-log4j12" % "1.7.7" % Runtime,
       "log4j" % "log4j" % "1.2.17" % Runtime))
 
@@ -71,4 +81,6 @@ def basicSettings =
       case x                                                       => (assemblyMergeStrategy in assembly).value.apply(x)
     },
     fork in run := true,
-    libraryDependencies ++= Seq("org.scalatest" %% "scalatest" % "3.1.1" % "test"))
+    libraryDependencies ++= Seq(
+        "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
+        "org.scalatest" %% "scalatest" % "3.1.2" % "test"))
