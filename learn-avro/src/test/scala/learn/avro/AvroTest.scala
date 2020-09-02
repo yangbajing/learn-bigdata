@@ -5,8 +5,9 @@ import java.nio.file.Files
 
 import com.zq.avro.{ Sex, SubData, User }
 import org.apache.avro.Schema
-import org.apache.avro.file.{ DataFileReader, DataFileWriter }
+import org.apache.avro.file.{ DataFileReader, DataFileWriter, SeekableByteArrayInput }
 import org.apache.avro.generic.{ GenericData, GenericDatumReader, GenericRecord }
+import org.apache.avro.io.{ DecoderFactory, EncoderFactory }
 import org.apache.avro.specific.{ SpecificData, SpecificDatumReader }
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.should.Matchers
@@ -45,11 +46,11 @@ class AvroTest extends AnyWordSpec with Matchers with BeforeAndAfter {
       val user2 = new GenericData.Record(schema)
       user2.put("name", "羊八井杨景")
       user2.put("dataSchema", "Data schema.")
-      user2.put("favoriteNumber", 255.0)
+      user2.put("favoriteNumber", 255.3)
       user2.put("sex", specificData.createEnum("MALE", SexSchema))
       val data2 = new GenericData.Record(SubSchema)
       data2.put("name", "开外挂")
-      data2.put("age", 1)
+      data2.put("age", -1)
       user2.put("data", data2)
 
       val dataFileWriter = new DataFileWriter(new CustomDatumWriter[GenericRecord](schema))
@@ -82,10 +83,10 @@ class AvroTest extends AnyWordSpec with Matchers with BeforeAndAfter {
           .build()
       val user2 = User
         .newBuilder()
-        //.setName("超过5个字符")
-        .setName("杨景")
+        .setName("超过5个字符")
+        //        .setName("杨景")
         .setDataSchema("")
-        .setFavoriteNumber(255.1)
+        .setFavoriteNumber(255.3)
         .setFavoriteColor("yellow")
         .setSex(Sex.MALE)
         .setData(SubData.newBuilder().setName("哈哈哈").setAge(8).build())
@@ -93,14 +94,24 @@ class AvroTest extends AnyWordSpec with Matchers with BeforeAndAfter {
 
       val outArr = new ByteArrayOutputStream()
 
-      val dataFileWriter = new DataFileWriter(new CustomDatumWriter[User](schema))
+      val datumWriter = new CustomDatumWriter[User](schema, GenericData.get(), true)
+      val dataFileWriter = new DataFileWriter(datumWriter)
       dataFileWriter.create(schema, outArr)
       dataFileWriter.append(user1)
       dataFileWriter.append(user2)
+
+      datumWriter.errors.foreach(println)
+//      datumWriter.errors shouldBe empty
+
       dataFileWriter.close()
 
+      val data = outArr.toByteArray
+      val reader =
+        new DataFileReader(new SeekableByteArrayInput(data), new GenericDatumReader[GenericRecord]( /*schema*/ ))
+      reader.forEachRemaining(record => println(s"From byte array read record is $record"))
+
       println(s"Byte array size is ${outArr.size()}")
-      Files.write(file.toPath, outArr.toByteArray)
+      Files.write(file.toPath, data)
     }
 
     "Deserialize" in {
@@ -109,6 +120,49 @@ class AvroTest extends AnyWordSpec with Matchers with BeforeAndAfter {
         user.getName.toString should (be("羊八井") or be("杨景"))
         logger.info(user.toString)
       }
+    }
+  }
+
+  "Json & Avro" should {
+    "Serialize" in {
+      val user1 =
+        User
+          .newBuilder()
+          .setName("羊八井")
+          .setDataSchema("Data Schema")
+          .setFavoriteNumber(null)
+          .setFavoriteColor("blue")
+          .setSex(Sex.NONE)
+          .setData(SubData.newBuilder().setName("一").setAge(3).build())
+          .build()
+
+      val outArr = new ByteArrayOutputStream()
+
+      val datumWriter = new CustomDatumWriter[User](schema, GenericData.get(), true)
+      val encoder = EncoderFactory.get().jsonEncoder(schema, outArr)
+      datumWriter.write(user1, encoder)
+      encoder.flush()
+
+      println(s"Byte array size is ${outArr.size()}")
+      println(outArr.toString)
+    }
+
+    "Deserialize Class" in {
+      val json =
+        """{"name":"羊八井","dataSchema":"Data Schema","favoriteNumber":null,"favoriteColor":{"string":"blue"},"sex":"NONE","data":{"name":"一","age":3}}"""
+      val datumReader = new SpecificDatumReader[User](schema)
+      val decoder = DecoderFactory.get().jsonDecoder(schema, json)
+      val user = datumReader.read(null, decoder)
+      println("User class is " + user)
+    }
+
+    "Deserialize Generic" in {
+      val json =
+        """{"name":"羊八井","dataSchema":"Data Schema","favoriteNumber":null,"favoriteColor":{"string":"blue"},"sex":"NONE","data":{"name":"一","age":3}}"""
+      val datumReader = new GenericDatumReader[GenericRecord](schema)
+      val decoder = DecoderFactory.get().jsonDecoder(schema, json)
+      val record = datumReader.read(null, decoder)
+      println("Generic record is " + record)
     }
   }
 

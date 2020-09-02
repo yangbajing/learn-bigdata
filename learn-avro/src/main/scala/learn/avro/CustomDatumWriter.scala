@@ -2,25 +2,31 @@ package learn.avro
 
 import java.io.IOException
 
-import learn.avro.util.CheckOption
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Type
 import org.apache.avro.generic.{ GenericData, GenericDatumWriter }
 import org.apache.avro.io.Encoder
 
-class CustomDatumWriter[T](root: Schema, data: GenericData) extends GenericDatumWriter[T](root, data) {
+import scala.collection.immutable
+
+class CustomDatumWriter[T](root: Schema, data: GenericData, collectAllError: Boolean)
+    extends GenericDatumWriter[T](root, data) {
+  private val checkCollector = new CheckErrorCollector(collectAllError)
   private var curField: Schema.Field = _
+
   def this() {
-    this(null, GenericData.get)
+    this(null, GenericData.get, false)
   }
 
   def this(data: GenericData) {
-    this(null, data)
+    this(null, data, false)
   }
 
   def this(root: Schema) {
-    this(root, GenericData.get)
+    this(root, GenericData.get, false)
   }
+
+  def errors: immutable.Seq[CheckError] = checkCollector.errors
 
   @throws[IOException]
   override def writeField(datum: Any, f: Schema.Field, out: Encoder, state: Any): Unit = {
@@ -32,7 +38,7 @@ class CustomDatumWriter[T](root: Schema, data: GenericData) extends GenericDatum
   override def writeWithoutConversion(schema: Schema, datum: Object, out: Encoder): Unit = {
     if (curField != null) {
       schema.getType match {
-        case Type.STRING | Type.INT | Type.LONG | Type.FLOAT | Type.DOUBLE => new CheckOption(curField, datum).check()
+        case Type.STRING | Type.INT | Type.LONG | Type.FLOAT | Type.DOUBLE => checkCollector.check(curField, datum)
         case _                                                             => // do nothing
       }
     }

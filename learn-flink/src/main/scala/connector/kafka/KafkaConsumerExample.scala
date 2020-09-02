@@ -16,7 +16,7 @@ import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindo
 import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer
-import org.apache.flink.table.api.scala.StreamTableEnvironment
+import org.apache.flink.table.api.bridge.scala._
 import org.apache.flink.types.Row
 import org.apache.flink.util.Collector
 import org.slf4j.LoggerFactory

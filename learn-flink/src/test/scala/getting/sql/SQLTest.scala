@@ -1,7 +1,8 @@
 package getting.sql
 
 import org.apache.flink.streaming.api.scala._
-import org.apache.flink.table.api.scala._
+import org.apache.flink.table.api.bridge.scala._
+import org.apache.flink.table.api._
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
 

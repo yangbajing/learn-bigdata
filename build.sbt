@@ -1,21 +1,37 @@
 val verSpark = "2.4.5"
 val verHadoop = "2.7.7"
-val verFlink = "1.10.1"
-val verJackson = "2.10.1"
+val verFlink = "1.11.1"
+val verJackson = "2.10.4"
+val verKafka = "2.5.1"
+val verAkka = "2.6.8"
+val verAkkaHttp = "10.2.0"
 
 ThisBuild / scalaVersion := "2.12.11"
 
 ThisBuild / scalafmtOnCompile := true
 
-lazy val learnBigdata = Project("learn-bigdata", file(".")).aggregate(learnSpark, learnFlink, learnAvro)
+lazy val learnBigdata = Project("learn-bigdata", file(".")).aggregate(learnKafka, learnSpark, learnFlink, learnAvro)
+
+lazy val learnKafka = _project("learn-kafka")
+  .dependsOn(learnCommon)
+  .settings(
+    libraryDependencies ++= Seq(
+        "org.apache.kafka" % "kafka-streams" % verKafka,
+        "org.apache.kafka" % "kafka-clients" % verKafka))
 
 lazy val learnAvro = _project("learn-avro")
   .dependsOn(learnCommon)
   .settings(
     avroSource := sourceDirectory.value / "resources",
     libraryDependencies ++= Seq(
+        "com.typesafe.akka" %% "akka-stream" % verAkka,
+        "com.typesafe.akka" %% "akka-http" % verAkkaHttp,
+        "de.heikoseeberger" %% "akka-http-jackson" % "1.32.0",
+        "com.fasterxml.jackson.module" %% "jackson-module-scala" % verJackson,
+        "com.fasterxml.jackson.core" % "jackson-databind" % verJackson,
         "org.apache.avro" % "avro" % "1.9.2",
-        "ch.qos.logback" % "logback-classic" % "1.2.3" % Test.extend(Provided)))
+        "org.apache.kafka" % "kafka-clients" % verKafka,
+        "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2"))
 
 lazy val learnSpark = _project("learn-spark")
   .dependsOn(learnCommon)
@@ -40,18 +56,20 @@ lazy val learnFlink = _project("learn-flink")
       "org.apache.flink" %% "flink-table-planner" % verFlink % Provided,
       "org.apache.flink" %% "flink-walkthrough-common" % verFlink,
       "org.apache.flink" %% "flink-connector-kafka" % verFlink,
-      "org.apache.flink" %% "flink-jdbc" % verFlink,
+      "org.apache.flink" %% "flink-connector-jdbc" % verFlink,
       "org.apache.flink" % "flink-json" % verFlink,
       "org.apache.flink" %% "flink-cep-scala" % verFlink,
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % verJackson,
-      "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % verJackson,
-      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % verJackson,
       "mysql" % "mysql-connector-java" % "8.0.20",
       "org.postgresql" % "postgresql" % "42.2.10",
       "org.slf4j" % "slf4j-log4j12" % "1.7.7" % Runtime,
       "log4j" % "log4j" % "1.2.17" % Runtime))
 
-lazy val learnCommon = _project("learn-common")
+lazy val learnCommon = _project("learn-common").settings(
+  libraryDependencies ++= Seq(
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % verJackson,
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % verJackson,
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % verJackson,
+      "ch.qos.logback" % "logback-classic" % "1.2.3"))
 
 def _project(name: String) = Project(name, file(name)).settings(basicSettings: _*)
 

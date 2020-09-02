@@ -10,21 +10,23 @@
     },
     {
       "name": "dataSchema",
-      "type": "string"
+      "type": "string",
+      "default": "aaa"
     },
     {
       "name": "favoriteNumber",
       "type": [
-        "null",
-        "double"
+        "double",
+        "null"
       ],
+      "default": 100.0,
       "max": 255.0
     },
     {
       "name": "favoriteColor",
       "type": [
-        "null",
-        "string"
+        "string",
+        "null"
       ],
       "max": 5,
       "min": 1

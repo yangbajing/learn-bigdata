@@ -2,8 +2,8 @@ package spendreport
 
 import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
-import org.apache.flink.table.api.Tumble
-import org.apache.flink.table.api.scala._
+import org.apache.flink.table.api.bridge.scala._
+import org.apache.flink.table.api._
 import org.apache.flink.walkthrough.common.table.{ SpendReportTableSink, UnboundedTransactionTableSource }
 
 object SpendReport {
