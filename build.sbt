@@ -1,4 +1,4 @@
-val verSpark = "2.4.5"
+val verSpark = "3.0.0" //"2.4.6"
 val verHadoop = "2.7.7"
 val verFlink = "1.11.1"
 val verJackson = "2.10.4"
@@ -10,7 +10,8 @@ ThisBuild / scalaVersion := "2.12.11"
 
 ThisBuild / scalafmtOnCompile := true
 
-lazy val learnBigdata = Project("learn-bigdata", file(".")).aggregate(learnKafka, learnSpark, learnFlink, learnAvro)
+lazy val learnBigdata = Project("learn-bigdata", file("."))
+  .aggregate(learnKafka, atguiguFlink, learnSpark, learnFlink, learnAvro)
 
 lazy val learnKafka = _project("learn-kafka")
   .dependsOn(learnCommon)
@@ -60,9 +61,20 @@ lazy val learnFlink = _project("learn-flink")
       "org.apache.flink" % "flink-json" % verFlink,
       "org.apache.flink" %% "flink-cep-scala" % verFlink,
       "mysql" % "mysql-connector-java" % "8.0.20",
-      "org.postgresql" % "postgresql" % "42.2.10",
-      "org.slf4j" % "slf4j-log4j12" % "1.7.7" % Runtime,
-      "log4j" % "log4j" % "1.2.17" % Runtime))
+      "org.postgresql" % "postgresql" % "42.2.10"))
+
+lazy val atguiguFlink = _project("atguigu-flink")
+  .dependsOn(learnCommon)
+  .settings(libraryDependencies ++= Seq(
+      "org.apache.flink" %% "flink-streaming-scala" % verFlink % Provided,
+      "org.apache.flink" %% "flink-table-api-scala-bridge" % verFlink % Provided,
+      "org.apache.flink" %% "flink-table-planner" % verFlink % Provided,
+      "org.apache.flink" %% "flink-walkthrough-common" % verFlink,
+      "org.apache.flink" %% "flink-connector-kafka" % verFlink,
+      "org.apache.flink" %% "flink-connector-jdbc" % verFlink,
+      "org.apache.flink" % "flink-json" % verFlink,
+      "org.apache.flink" %% "flink-cep-scala" % verFlink,
+      "mysql" % "mysql-connector-java" % "8.0.20"))
 
 lazy val learnCommon = _project("learn-common").settings(
   libraryDependencies ++= Seq(
