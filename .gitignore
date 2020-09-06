@@ -44,6 +44,6 @@ docs/_sphinx/exts/__pycache__/
 static/build/
 static/node_modules/
 
-
-
+learn-hadoop/standalone/output/
 data/
+
